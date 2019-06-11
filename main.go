@@ -19,6 +19,8 @@ import (
 	"github.com/nfnt/resize"
 )
 
+//shrinkImage will shrink an image to the width specified in size, and keep
+// the verical aspect ratio for that width.
 func shrinkImage(inReader io.Reader, outWriter io.Writer, size uint) error {
 	decIm, _, err := image.Decode(inReader)
 	if err != nil {
@@ -48,7 +50,7 @@ func (d *data) uploadImage(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
-	//Takes max size of form to parse.
+	//Takes max size of form to parse, so here we can limit the size of the image to upload.
 	err = r.ParseMultipartForm(32 << 20)
 	if err != nil {
 		log.Println("error: ParseMultipartForm: ", err)
