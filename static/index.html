@@ -1,0 +1,59 @@
+{{template "mainHTML"}}
+
+<!--   *******************TEMPLATES*************************** -->
+
+{{define "mainHTML"}}
+<!DOCTYPE html>
+<html lang="en">
+
+{{template "head1"}}
+
+<body>
+
+  {{template "body1"}}
+
+</body>
+
+</html>
+{{end}}
+
+
+{{define "head1"}}
+
+<head>
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+  <title>Your page title here :)</title>
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" href="static/css/normalize.css">
+  <link rel="stylesheet" href="static/css/barebones.css">
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="static/images/favicon-16.png">
+
+</head>
+
+{{end}}
+
+{{define "body1"}}
+<div class="grid-container halves">
+  <div>First half</div>
+  <div>Second half</div>
+  <a class="button button-primary" href="/upload">Anchor button</a>
+</div>
+{{end}}
