@@ -2,48 +2,48 @@
 <!DOCTYPE html>
 <html lang="en">
 
-{{template "head1"}}
+  {{template "head1"}}
 
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Document</title>
-</head>
+  </head>
 
-{{template "topSection"}}
+  {{template "topSection"}}
 
-<body>
+  <body>
     <form enctype="multipart/form-data" action="http://localhost:8080/upload" method="post">
-    <div class="columns">
+      <div class="columns">
         <div class="column">
-            <div class="card">
-                <div class="field">
-                  <div class="file is-normal">
-                    <label class="file-label">
-                      <input class="file-input" type="file" name="resume">
-                      <span class="file-cta">
-                        <span class="file-icon">
-                          <i class="fas fa-upload"></i>
-                        </span>
-                        <span class="file-label">
-                          Select File here
-                        </span>
-                      </span>
-                    </label>
-                  </div>
-                </div>
-
-                <input class="button" type="submit" value="upload" />
-                
+          <div class="card">
+            <div class="field">
+              <div class="file is-normal">
+                <label class="file-label">
+                  <input class="file-input" type="file" name="resume">
+                  <span class="file-cta">
+                    <span class="file-icon">
+                      <i class="fas fa-upload"></i>
+                    </span>
+                    <span class="file-label">
+                      Select File here
+                    </span>
+                  </span>
+                </label>
+              </div>
             </div>
+
+            <input class="button" type="submit" value="upload" />
+
+          </div>
         </div>
         <div class="column"></div>
         <div class="column"></div>
         <div class="column"></div>
-    </div>
+      </div>
     </form>
-</body>
+  </body>
 
 </html>
 {{end}}
