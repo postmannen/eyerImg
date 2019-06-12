@@ -25,7 +25,7 @@
   <!-- Basic Page Needs
   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   <meta charset="utf-8">
-  <title>Your page title here :)</title>
+  <title>eyerImg</title>
   <meta name="description" content="">
   <meta name="author" content="">
 
@@ -39,21 +39,34 @@
 
   <!-- CSS
   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-  <link rel="stylesheet" href="static/css/normalize.css">
-  <link rel="stylesheet" href="static/css/barebones.css">
+  <link rel="stylesheet" href="static/css/bulma.min.css">
 
   <!-- Favicon
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  –––––––––––––––––––––––––––––––––––––––––––––––––– 
   <link rel="icon" type="image/png" href="static/images/favicon-16.png">
-
+  -->
 </head>
-
 {{end}}
 
+{{define "topSection"}}
+<section class="hero is-primary">
+  <div class="hero-body">
+    <h1 class="title"><a style="text-decoration:none; color:#000000;" href="/">erterImg </a></h1>
+  </div>
+</section>
+{{end}}
+
+
 {{define "body1"}}
-<div class="grid-container halves">
-  <div>First half</div>
-  <div>Second half</div>
-  <a class="button button-primary" href="/upload">Anchor button</a>
+{{template "topSection"}}
+<div class="columns is-vcentered">
+  <div class="column">
+    
+      <a class="button is-large" href="/upload">Upload Image</a>
+    
+    <div class="column">
+      <a class="button is-large" href="/show">Show Image</a>
+    </div>
+  <div>
 </div>
 {{end}}

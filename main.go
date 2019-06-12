@@ -65,6 +65,7 @@ func (d *data) uploadImage(w http.ResponseWriter, r *http.Request) {
 	inFile, inFileHeader, err := r.FormFile("myFile")
 	if err != nil {
 		log.Println("error: failed to return web file: ", err)
+		return
 	}
 	defer inFile.Close()
 	fmt.Printf("File uploaded : %v\n", inFileHeader.Filename)
@@ -76,6 +77,7 @@ func (d *data) uploadImage(w http.ResponseWriter, r *http.Request) {
 	mainOutFile, err := ioutil.TempFile("./", "tmp100-*.jpg")
 	if err != nil {
 		log.Println("error: creating TempFile: ", err)
+		return
 	}
 
 	if err := shrinkImage(inFile, mainOutFile, thumbnailSize); err != nil {

@@ -11,11 +11,36 @@
     <title>Document</title>
 </head>
 
+{{template "topSection"}}
+
 <body>
     <form enctype="multipart/form-data" action="http://localhost:8080/upload" method="post">
-    <div class="grid-container halves">
-        <div><input type="file" name="myFile" /></div>
-        <div><input type="submit" value="upload" /></div>
+    <div class="columns">
+        <div class="column">
+            <div class="card">
+                <div class="field">
+                  <div class="file is-normal">
+                    <label class="file-label">
+                      <input class="file-input" type="file" name="resume">
+                      <span class="file-cta">
+                        <span class="file-icon">
+                          <i class="fas fa-upload"></i>
+                        </span>
+                        <span class="file-label">
+                          Select File here
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <input class="button" type="submit" value="upload" />
+                
+            </div>
+        </div>
+        <div class="column"></div>
+        <div class="column"></div>
+        <div class="column"></div>
     </div>
     </form>
 </body>
