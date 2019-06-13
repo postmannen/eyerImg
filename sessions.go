@@ -29,7 +29,7 @@ func (d *data) login(w http.ResponseWriter, r *http.Request) {
 
 	// Authentication goes here
 	// ...
-	url := googleOauthConfig.AuthCodeURL(oauthStateString)
+	url := d.googleOauthConfig.AuthCodeURL(d.oauthStateString)
 	//??? Will redirect to / if authentication fails
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 
@@ -42,6 +42,7 @@ func (d *data) login(w http.ResponseWriter, r *http.Request) {
 	//}
 }
 
+//logout will logout the user, and revoke the session cookie.
 func (d *data) logout(w http.ResponseWriter, r *http.Request) {
 	var err error
 	session, err := store.Get(r, "cookie-name")
@@ -56,22 +57,14 @@ func (d *data) logout(w http.ResponseWriter, r *http.Request) {
 		log.Println("error: session.Save on /logout: ", err)
 		return
 	}
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
 // -------------------------- OAUTH ---------------------------------------
 // ------------------------------------------------------------------------
 
-var (
-	// TODO: randomize it
-	oauthStateString = "pseudo-random2"
-)
-
-var (
-	googleOauthConfig *oauth2.Config
-)
-
-func init() {
-	googleOauthConfig = &oauth2.Config{
+func newOauthConfig() *oauth2.Config {
+	return &oauth2.Config{
 		RedirectURL:  "http://localhost:8080/callback",
 		ClientID:     os.Getenv("googlekey"),
 		ClientSecret: os.Getenv("googlesecret"),
@@ -80,6 +73,12 @@ func init() {
 	}
 }
 
+//handleGoogleCallback is the handler used when google wants to tell if
+// the authentication of the user was ok or not.
+// If the authentication is ok, the token.Valid() is set to true, and
+// we can then create a cookie with the value "authenticated" for the user.
+// We can then check later if that value is present in the cookie to grant
+// access to handlers.
 func (d *data) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	//content, err := getUserInfo(r.FormValue("state"), r.FormValue("code"))
 	//if err != nil {
@@ -94,7 +93,7 @@ func (d *data) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(" *** Entering handleGoogleCallback function")
 
-	token, err := googleOauthConfig.Exchange(oauth2.NoContext, r.FormValue("code"))
+	token, err := d.googleOauthConfig.Exchange(oauth2.NoContext, r.FormValue("code"))
 	if err != nil {
 		log.Println("code exchange failed: ", err.Error())
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
@@ -117,14 +116,16 @@ func (d *data) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+
 }
 
 func (d *data) getUserInfo(state string, code string) ([]byte, error) {
-	if state != oauthStateString {
+	if state != d.oauthStateString {
 		return nil, fmt.Errorf("invalid oauth state")
 	}
 
-	token, err := googleOauthConfig.Exchange(oauth2.NoContext, code)
+	token, err := d.googleOauthConfig.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		return nil, fmt.Errorf("code exchange failed: %s", err.Error())
 	}

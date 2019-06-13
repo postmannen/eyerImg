@@ -7,6 +7,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"html/template"
 	"image"
@@ -17,6 +18,7 @@ import (
 	"net/http"
 
 	"github.com/nfnt/resize"
+	"golang.org/x/oauth2"
 )
 
 //shrinkImage will shrink an image to the width specified in size, and keep
@@ -54,7 +56,7 @@ func (d *data) uploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 	// ******************************
 
-	if err := d.templ.ExecuteTemplate(w, "upload", nil); err != nil {
+	if err := d.templ.ExecuteTemplate(w, "upload", d); err != nil {
 		log.Println("error: failed executing template for upload: ", err)
 	}
 
@@ -118,7 +120,10 @@ func (d *data) uploadImage(w http.ResponseWriter, r *http.Request) {
 // -------------------------------- Main HTTP ----------------------------
 
 type data struct {
-	templ *template.Template
+	templ             *template.Template
+	googleOauthConfig *oauth2.Config
+	oauthStateString  string
+	UploadURL         string
 }
 
 //newData will return a *data, which holds all the templates parsed.
@@ -139,8 +144,14 @@ func (d *data) mainPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	uploadURL := flag.String("uploadURL", "http://localhost:8080/upload", "The complete URL to the upload handler")
+	flag.Parse()
+
 	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
 	d := newData()
+	d.googleOauthConfig = newOauthConfig()
+	d.oauthStateString = "pseudo-random2"
+	d.UploadURL = *uploadURL
 
 	http.HandleFunc("/", d.mainPage)
 	http.HandleFunc("/login", d.login)
