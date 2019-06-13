@@ -4,21 +4,32 @@
 
   {{template "head1"}}
 
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Document</title>
-  </head>
-
   {{template "topSection"}}
 
   <body>
-    <form enctype="multipart/form-data" action="http://localhost:8080/upload" method="post">
+    <form enctype="multipart/form-data" action="http://10.0.0.223:8080/upload" method="post">
       <div class="columns">
         <div class="column">
           <div class="card">
 
+            <div class="file has-name is-fullwidth">
+              <label class="file-label">
+                <input class="file-input" id="file" type="file" name="myFile">
+                <span class="file-cta">
+                  <span class="file-icon">
+                    <i class="fas fa-upload"></i>
+                  </span>
+                  <span class="file-label">
+                    Choose a file…
+                  </span>
+                </span>
+                <span class="file-name" id="filename">
+                  some file ...
+                </span>
+              </label>
+            </div>
+
+            <!--
             <div class="field">
               <div class="file is-normal is-centered is-boxed">
                 <label class="file-label">
@@ -34,8 +45,9 @@
                 </label>
               </div>
             </div>
+          -->
 
-            <input class="button is-fullwidth" type="submit" value="upload" />
+            <input class="button is-fullwidth is-centered" type="submit" value="upload" />
 
           </div>
         </div>
