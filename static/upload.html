@@ -18,15 +18,16 @@
       <div class="columns">
         <div class="column">
           <div class="card">
+
             <div class="field">
-              <div class="file is-normal">
+              <div class="file is-normal is-centered is-boxed">
                 <label class="file-label">
-                  <input class="file-input" type="file" name="resume">
+                  <input class="file-input" id="file" type="file" name="myFile">
                   <span class="file-cta">
                     <span class="file-icon">
                       <i class="fas fa-upload"></i>
                     </span>
-                    <span class="file-label">
+                    <span class="file-label" id="filename">
                       Select File here
                     </span>
                   </span>
@@ -34,7 +35,7 @@
               </div>
             </div>
 
-            <input class="button" type="submit" value="upload" />
+            <input class="button is-fullwidth" type="submit" value="upload" />
 
           </div>
         </div>
@@ -46,4 +47,13 @@
   </body>
 
 </html>
+
+<script>
+  var file = document.getElementById("file");
+  file.onchange = function () {
+    if (file.files.length > 0) {
+      document.getElementById('filename').innerHTML = file.files[0].name;
+    }
+  };
+</script>
 {{end}}

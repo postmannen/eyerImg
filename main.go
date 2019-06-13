@@ -40,7 +40,7 @@ func shrinkImage(inReader io.Reader, outWriter io.Writer, size uint) error {
 const (
 	mainImageSize    = 700
 	thumbnailSize    = 200
-	serverListenPort = ":8080"
+	serverListenPort = "0.0.0.0:8080"
 )
 
 func (d *data) uploadImage(w http.ResponseWriter, r *http.Request) {
