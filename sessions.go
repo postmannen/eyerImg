@@ -15,6 +15,11 @@ import (
 
 var (
 	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
+	// Note: Don't store your key in your source code. Pass it via an
+	// environmental variable, or flag (or both), and don't accidentally commit it
+	// alongside your code. Ensure your key is sufficiently random - i.e. use Go's
+	// crypto/rand or securecookie.GenerateRandomKey(32) and persist the result.
+	//TODO: Make this random.
 	key   = []byte("super-secret-key")
 	store = sessions.NewCookieStore(key)
 )
