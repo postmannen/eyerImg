@@ -150,6 +150,11 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
 	d := newData()
 	d.googleOauthConfig = newOauthConfig()
+	//TODO: Replace with random value for each session.
+	// Move this inside the /login, and create a map for
+	// each user containing the State string for each
+	// authentication request, and eventually other
+	// variables tied to the individual user.
 	d.oauthStateString = "pseudo-random2"
 	d.UploadURL = *uploadURL
 
