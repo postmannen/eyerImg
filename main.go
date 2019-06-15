@@ -17,6 +17,8 @@ import (
 	"log"
 	"net/http"
 
+	_ "net/http/pprof"
+
 	"github.com/nfnt/resize"
 	"golang.org/x/oauth2"
 )
