@@ -130,6 +130,25 @@ func (d *data) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// ---------------------- TEST
+//isAuthenticated will check the the session cookie for a key "authenticated"
+// if it
+func isAuthenticated(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// ********* SESSION ************
+		session, _ := store.Get(r, "cookie-name")
+
+		// Check if user is authenticated
+		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		// ******************************
+
+		h(w, r)
+	}
+}
+
 func (d *data) getUserInfo(state string, code string) ([]byte, error) {
 	if state != d.oauthStateString {
 		return nil, fmt.Errorf("invalid oauth state")

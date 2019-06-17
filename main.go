@@ -48,16 +48,6 @@ const (
 )
 
 func (d *data) uploadImage(w http.ResponseWriter, r *http.Request) {
-	// ********* SESSION ************
-	session, _ := store.Get(r, "cookie-name")
-
-	// Check if user is authenticated
-	if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return
-	}
-	// ******************************
-
 	if err := d.templ.ExecuteTemplate(w, "upload", d); err != nil {
 		log.Println("error: failed executing template for upload: ", err)
 	}
@@ -164,7 +154,7 @@ func main() {
 	http.HandleFunc("/login", d.login)
 	http.HandleFunc("/logout", d.logout)
 	http.HandleFunc("/callback", d.handleGoogleCallback)
-	http.HandleFunc("/upload", d.uploadImage)
+	http.HandleFunc("/upload", isAuthenticated(d.uploadImage))
 
 	fmt.Println("Web server started, listening at port ", serverListenPort)
 	err := http.ListenAndServe(serverListenPort, nil)
