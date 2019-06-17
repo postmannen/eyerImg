@@ -10,8 +10,25 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
+	"crypto/rand"
+
 	"github.com/gorilla/sessions"
 )
+
+//createRandomKey will create a random []byte with the size taken as input.
+func createRandomKey(size int) ([]byte, error) {
+	b := make([]byte, size)
+
+	//rand.Read() will read random values from the crypto package,
+	// and read them into the []byte b.
+	_, err := rand.Read(b)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+const storeKeySize = 16
 
 var (
 	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
@@ -19,32 +36,20 @@ var (
 	// environmental variable, or flag (or both), and don't accidentally commit it
 	// alongside your code. Ensure your key is sufficiently random - i.e. use Go's
 	// crypto/rand or securecookie.GenerateRandomKey(32) and persist the result.
-	//TODO: Make this random.
-	key   = []byte("super-secret-key")
-	store = sessions.NewCookieStore(key)
+	//
+	//TODO: Make Storage of key persistant.
+	//NB: Right now it will create a new key everytime the app i restarted.
+	key, _ = createRandomKey(storeKeySize)
+	store  = sessions.NewCookieStore(key)
 )
 
 func (d *data) login(w http.ResponseWriter, r *http.Request) {
-	//var err error
-
-	//session, err := store.Get(r, "cookie-name")
-	//if err != nil {
-	//	log.Println("error: store.Get in /login failed: ", err)
-	//}
 
 	// Authentication goes here
 	// ...
 	url := d.googleOauthConfig.AuthCodeURL(d.oauthStateString)
 	//??? Will redirect to / if authentication fails
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-
-	// Set user as authenticated
-	//session.Values["authenticated"] = true
-	//err = session.Save(r, w)
-	//if err != nil {
-	//	log.Println("error: session.Save on /login: ", err)
-	//	return
-	//}
 }
 
 //logout will logout the user, and revoke the session cookie.
