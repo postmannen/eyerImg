@@ -144,7 +144,7 @@ func handlers(d *server, a *auth) {
 	http.HandleFunc("/login", a.login)
 	http.HandleFunc("/logout", a.logout)
 	http.HandleFunc("/callback", a.handleGoogleCallback)
-	http.HandleFunc("/upload", isAuthenticated(d.uploadImage))
+	http.HandleFunc("/upload", a.isAuthenticated(d.uploadImage))
 }
 
 func main() {
