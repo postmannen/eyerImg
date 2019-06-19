@@ -20,7 +20,6 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/nfnt/resize"
-	"golang.org/x/oauth2"
 )
 
 //shrinkImage will shrink an image to the width specified in size, and keep
@@ -47,7 +46,7 @@ const (
 	serverListenPort = "0.0.0.0:8080"
 )
 
-func (d *data) uploadImage(w http.ResponseWriter, r *http.Request) {
+func (d *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 	if err := d.templ.ExecuteTemplate(w, "upload", d); err != nil {
 		log.Println("error: failed executing template for upload: ", err)
 	}
@@ -111,50 +110,51 @@ func (d *data) uploadImage(w http.ResponseWriter, r *http.Request) {
 // -----------------------------------------------------------------------
 // -------------------------------- Main HTTP ----------------------------
 
-type data struct {
-	templ             *template.Template
-	googleOauthConfig *oauth2.Config
-	oauthStateString  string
-	UploadURL         string
+type server struct {
+	templ     *template.Template
+	UploadURL string //the whole url for upload, ex. http://fqdn/upload
 }
 
-//newData will return a *data, which holds all the templates parsed.
-func newData() *data {
+//newServer will return a *server, and will hold all the
+// server specific variables.
+func newServer(uploadURL string) *server {
 	t, err := template.ParseFiles("./static/index.html", "./static/upload.html")
 	if err != nil {
 		log.Println("error: failed parsing template: ", err)
 	}
 
-	return &data{templ: t}
+	return &server{
+		templ:     t,
+		UploadURL: uploadURL,
+	}
 }
 
-func (d *data) mainPage(w http.ResponseWriter, r *http.Request) {
+//mainPage is the main web page.
+func (d *server) mainPage(w http.ResponseWriter, r *http.Request) {
 	err := d.templ.ExecuteTemplate(w, "mainHTML", nil)
 	if err != nil {
 		log.Println("error: executing template: ", err)
 	}
 }
 
+//handlers contains all the handlers used for this service.
+func handlers(d *server, a *auth) {
+	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
+	http.HandleFunc("/", d.mainPage)
+	http.HandleFunc("/login", a.login)
+	http.HandleFunc("/logout", a.logout)
+	http.HandleFunc("/callback", a.handleGoogleCallback)
+	http.HandleFunc("/upload", isAuthenticated(d.uploadImage))
+}
+
 func main() {
 	uploadURL := flag.String("uploadURL", "http://localhost:8080/upload", "The complete URL to the upload handler")
 	flag.Parse()
 
-	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
-	d := newData()
-	d.googleOauthConfig = newOauthConfig()
-	//TODO: Replace with random value for each session.
-	// Move this inside the /login, and create a map for
-	// each user containing the State string for each
-	// authentication request, and eventually other
-	// variables tied to the individual user.
-	d.oauthStateString = "pseudo-random2"
-	d.UploadURL = *uploadURL
+	d := newServer(*uploadURL)
+	a := newAuth()
 
-	http.HandleFunc("/", d.mainPage)
-	http.HandleFunc("/login", d.login)
-	http.HandleFunc("/logout", d.logout)
-	http.HandleFunc("/callback", d.handleGoogleCallback)
-	http.HandleFunc("/upload", isAuthenticated(d.uploadImage))
+	handlers(d, a)
 
 	fmt.Println("Web server started, listening at port ", serverListenPort)
 	err := http.ListenAndServe(serverListenPort, nil)

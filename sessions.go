@@ -43,17 +43,17 @@ var (
 	store  = sessions.NewCookieStore(key)
 )
 
-func (d *data) login(w http.ResponseWriter, r *http.Request) {
+func (a *auth) login(w http.ResponseWriter, r *http.Request) {
 
 	// Authentication goes here
 	// ...
-	url := d.googleOauthConfig.AuthCodeURL(d.oauthStateString)
+	url := a.googleOauthConfig.AuthCodeURL(a.oauthStateString)
 	//??? Will redirect to / if authentication fails
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
 //logout will logout the user, and revoke the session cookie.
-func (d *data) logout(w http.ResponseWriter, r *http.Request) {
+func (a *auth) logout(w http.ResponseWriter, r *http.Request) {
 	var err error
 	session, err := store.Get(r, "cookie-name")
 	if err != nil {
@@ -89,7 +89,7 @@ func newOauthConfig() *oauth2.Config {
 // we can then create a cookie with the value "authenticated" for the user.
 // We can then check later if that value is present in the cookie to grant
 // access to handlers.
-func (d *data) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
+func (a *auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	//content, err := getUserInfo(r.FormValue("state"), r.FormValue("code"))
 	//if err != nil {
 	//	fmt.Println(err.Error())
@@ -103,7 +103,7 @@ func (d *data) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(" *** Entering handleGoogleCallback function")
 
-	token, err := d.googleOauthConfig.Exchange(oauth2.NoContext, r.FormValue("code"))
+	token, err := a.googleOauthConfig.Exchange(oauth2.NoContext, r.FormValue("code"))
 	if err != nil {
 		log.Println("code exchange failed: ", err.Error())
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
@@ -130,31 +130,12 @@ func (d *data) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// ---------------------- TEST
-//isAuthenticated will check the the session cookie for a key "authenticated"
-// if it
-func isAuthenticated(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// ********* SESSION ************
-		session, _ := store.Get(r, "cookie-name")
-
-		// Check if user is authenticated
-		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-			return
-		}
-		// ******************************
-
-		h(w, r)
-	}
-}
-
-func (d *data) getUserInfo(state string, code string) ([]byte, error) {
-	if state != d.oauthStateString {
+func (a *auth) getUserInfo(state string, code string) ([]byte, error) {
+	if state != a.oauthStateString {
 		return nil, fmt.Errorf("invalid oauth state")
 	}
 
-	token, err := d.googleOauthConfig.Exchange(oauth2.NoContext, code)
+	token, err := a.googleOauthConfig.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		return nil, fmt.Errorf("code exchange failed: %s", err.Error())
 	}
@@ -173,4 +154,39 @@ func (d *data) getUserInfo(state string, code string) ([]byte, error) {
 	}
 
 	return contents, nil
+}
+
+// -------------------------Auth-------------------------------
+
+type auth struct {
+	googleOauthConfig *oauth2.Config
+	oauthStateString  string
+}
+
+func newAuth() *auth {
+	return &auth{
+		googleOauthConfig: newOauthConfig(),
+		//TODO: Replace with random value for each session.
+		// Move this inside the /login, and create a map for
+		// each user containing the State string for each
+		// authentication request, and eventually other
+		// variables tied to the individual user.
+		oauthStateString: "pseudo-random2",
+	}
+}
+
+func isAuthenticated(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// ********* SESSION ************
+		session, _ := store.Get(r, "cookie-name")
+
+		// Check if user is authenticated
+		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		// ******************************
+
+		h(w, r)
+	}
 }
