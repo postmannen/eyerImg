@@ -43,4 +43,5 @@ The variables can be stored in a file called for example `exports`, and can then
 ## Google Cloud specific things
 
 Create an Oauth app under app credentials i Google Cloud Console.
-Set the callback URL to `http://<your domain name>:<some port>/callback`
+Set the callback URL to 
+`http://<your domain name>:<some port>/callback`
