@@ -41,9 +41,8 @@ func shrinkImage(inReader io.Reader, outWriter io.Writer, size uint) error {
 }
 
 const (
-	mainImageSize    = 700
-	thumbnailSize    = 200
-	serverListenPort = "0.0.0.0:8080"
+	mainImageSize = 700
+	thumbnailSize = 200
 )
 
 //uploadImage will open a form for the user for uploading images.
@@ -120,7 +119,7 @@ type server struct {
 
 //newServer will return a *server, and will hold all the
 // server specific variables.
-func newServer(uploadURL string) *server {
+func newServer(proto string, host string, port string) *server {
 	t, err := template.ParseFiles("./static/index.html", "./static/upload.html")
 	if err != nil {
 		log.Println("error: failed parsing template: ", err)
@@ -128,7 +127,7 @@ func newServer(uploadURL string) *server {
 
 	return &server{
 		templ:     t,
-		UploadURL: uploadURL,
+		UploadURL: proto + host + port + "/upload",
 	}
 }
 
@@ -151,16 +150,18 @@ func handlers(d *server, a *auth) {
 }
 
 func main() {
-	uploadURL := flag.String("uploadURL", "http://localhost:8080/upload", "The complete URL to the upload handler")
+	host := flag.String("host", "localhost", "The host prefixed with http or https")
+	port := flag.String("port", ":8080", "The port, like :8080")
+	proto := flag.String("proto", "http://", "http:// or https://")
 	flag.Parse()
 
-	d := newServer(*uploadURL)
-	a := newAuth()
+	d := newServer(*proto, *host, *port)
+	a := newAuth(*proto, *host, *port)
 
 	handlers(d, a)
 
-	fmt.Println("Web server started, listening at port ", serverListenPort)
-	err := http.ListenAndServe(serverListenPort, nil)
+	fmt.Println("Web server started, listening at port ", *host+*port)
+	err := http.ListenAndServe(*host+*port, nil)
 	if err != nil {
 		log.Println("error: ListenAndServer failed: ", err)
 	}

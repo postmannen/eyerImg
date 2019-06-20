@@ -78,7 +78,7 @@ func (a *auth) logout(w http.ResponseWriter, r *http.Request) {
 
 //newOauthConfig will return a *oauth2.Config with callback url
 // and ID & Secret from environment variables.
-func newOauthConfig() *oauth2.Config {
+func newOauthConfig(proto string, host string, port string) *oauth2.Config {
 	clientID := os.Getenv("googlekey")
 	if clientID == "" {
 		log.Fatal("No environment variable named googlekey is set !")
@@ -89,7 +89,7 @@ func newOauthConfig() *oauth2.Config {
 	}
 
 	return &oauth2.Config{
-		RedirectURL:  "http://localhost:8080/callback",
+		RedirectURL:  proto + host + port + "/callback",
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Scopes: []string{
@@ -204,14 +204,14 @@ type auth struct {
 }
 
 //newAuth will return *auth, with a prepared OauthConfig and CookieStore set.
-func newAuth() *auth {
+func newAuth(proto string, host string, port string) *auth {
 	key := os.Getenv("cookiestorekey")
 	if key == string("") {
 		log.Fatal("error fatal: no environment variable with the name 'cookiestorekey' found !")
 	}
 
 	return &auth{
-		googleOauthConfig: newOauthConfig(),
+		googleOauthConfig: newOauthConfig(proto, host, port),
 		store:             sessions.NewCookieStore([]byte(key)),
 	}
 }
@@ -222,7 +222,7 @@ func (a *auth) isAuthenticated(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, _ := a.store.Get(r, "cookie-name")
 		email, _ := session.Values["email"]
-		log.Printf("\n--- Authenticated used accessing page is : %v ---\n", email)
+		log.Printf("\n--- Authenticated user accessing page is : %v ---\n", email)
 
 		// Check if user is authenticated
 		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
