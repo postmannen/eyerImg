@@ -150,9 +150,11 @@ func handlers(d *server, a *auth) {
 }
 
 func main() {
-	host := flag.String("host", "localhost", "The host prefixed with http or https")
+	host := flag.String("host", "localhost", "The FQDN for the web server")
 	port := flag.String("port", ":8080", "The port, like :8080")
 	proto := flag.String("proto", "http://", "http:// or https://")
+	hostListen := flag.String("hostListen", "localhost", "The ip of the interfaceto listen. Typically 0.0.0.0 for an internet facing server")
+
 	flag.Parse()
 
 	d := newServer(*proto, *host, *port)
@@ -161,7 +163,7 @@ func main() {
 	handlers(d, a)
 
 	fmt.Println("Web server started, listening at port ", *host+*port)
-	err := http.ListenAndServe(*host+*port, nil)
+	err := http.ListenAndServe(*hostListen+*port, nil)
 	if err != nil {
 		log.Println("error: ListenAndServer failed: ", err)
 	}
