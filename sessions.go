@@ -58,11 +58,13 @@ func (a *auth) logout(w http.ResponseWriter, r *http.Request) {
 
 	// Revoke users authentication
 	session.Values["authenticated"] = false
+
 	err = session.Save(r, w)
 	if err != nil {
 		log.Println("error: session.Save on /logout: ", err)
 		return
 	}
+
 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
@@ -74,8 +76,10 @@ func newOauthConfig() *oauth2.Config {
 		RedirectURL:  "http://localhost:8080/callback",
 		ClientID:     os.Getenv("googlekey"),
 		ClientSecret: os.Getenv("googlesecret"),
-		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
-		Endpoint:     google.Endpoint,
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile"},
+		Endpoint: google.Endpoint,
 	}
 }
 
@@ -110,32 +114,32 @@ func (a *auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("--- state : ", state)
 	fmt.Println("--- code : ", code)
-	//fmt.Println("token = ", token)
 
 	if !token.Valid() {
 		log.Println("error: token not valid in callback function. Token value = ", token.Valid())
 		return
 	}
 
-	//Get information about user logged in.
+	//Get information from Google about user logged in.
 	rawUserInfo, err := a.getUserInfo(state, token)
 	if err != nil {
 		log.Println("error: getUserInfo failed: ", err)
 	}
-
-	//"{\n  \"id\": \"109373192721308265542\",\n  \"email\": \"postmannen@gmail.com\",\n  \"verified_email\": true,\n  \"picture\": \"https://lh5.googleusercontent.com/-yKcekqyo_ng/AAAAAAAAAAI/AAAAAAAAAoY/v1RtpnQT494/photo.jpg\"\n}\n"
 
 	userInfo := struct {
 		Id            string `json:"id"`
 		Email         string `json:"email"`
 		VerifiedEmail bool   `json:"verified_email"`
 		Picture       string `json:"picture"`
+		FullName      string `json:"name"`
+		FirstName     string `json:"given_name"`
+		LastName      string `json:"family_name"`
 	}{}
 
 	if err := json.Unmarshal(rawUserInfo, &userInfo); err != nil {
 		log.Println("error: marshall of the userInfo failed: ", err)
 	}
-	fmt.Printf("%v\n", userInfo)
+	fmt.Printf("%#v\n", userInfo)
 
 	//If all  checks above were ok, we know the the authentication went ok,
 	// and we can create a session cookie to use from here.
@@ -144,7 +148,12 @@ func (a *auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 		log.Println("error: store.Get in /login failed: ", err)
 	}
 
+	//TODO : session.Values["randomkey"] = randomKey
 	session.Values["authenticated"] = true
+	session.Values["id"] = userInfo.Id
+	session.Values["fullname"] = userInfo.FullName
+	session.Values["email"] = userInfo.Email
+
 	//set token expire to 1 whole day
 	//session.Options = &sessions.Options{MaxAge: 60 * 60 * 24}
 	err = session.Save(r, w)
