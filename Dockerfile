@@ -8,4 +8,4 @@ RUN go get github.com/nfnt/resize
 RUN go get golang.org/x/oauth2
 RUN go get golang.org/x/oauth2/google
 RUN go build -o main .
-CMD ["/app/main"]
+CMD ["/app/main", "-proto=http://", "-host=eyer.io", "-port=:80", "-hostListen=0.0.0.0"]
