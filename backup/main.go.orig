@@ -16,10 +16,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
 	_ "net/http/pprof"
 
 	"github.com/nfnt/resize"
-	"github.com/postmannen/authsession"
 )
 
 //shrinkImage will shrink an image to the width specified in size, and keep
@@ -140,23 +140,25 @@ func (d *server) mainPage(w http.ResponseWriter, r *http.Request) {
 }
 
 //handlers contains all the handlers used for this service.
-func handlers(d *server, a *authsession.Auth) {
+func handlers(d *server, a *auth) {
 	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
 	http.HandleFunc("/", d.mainPage)
-	http.HandleFunc("/upload", a.IsAuthenticated(d.uploadImage))
+	http.HandleFunc("/login", a.login)
+	http.HandleFunc("/logout", a.logout)
+	http.HandleFunc("/callback", a.handleGoogleCallback)
+	http.HandleFunc("/upload", a.isAuthenticated(d.uploadImage))
 }
 
 func main() {
-	//Check flags
 	host := flag.String("host", "localhost", "The FQDN for the web server")
 	port := flag.String("port", ":8080", "The port, like :8080")
 	proto := flag.String("proto", "http://", "http:// or https://")
 	hostListen := flag.String("hostListen", "localhost", "The ip of the interfaceto listen. Typically 0.0.0.0 for an internet facing server")
+
 	flag.Parse()
 
 	d := newServer(*proto, *host, *port)
-	a := authsession.NewAuth(*proto, *host, *port)
-	a.Run()
+	a := newAuth(*proto, *host, *port)
 
 	handlers(d, a)
 

@@ -1,4 +1,4 @@
-package main
+package authsession
 
 import (
 	"encoding/base64"
@@ -30,7 +30,34 @@ func createRandomKey(size int) ([]byte, error) {
 	return b, nil
 }
 
-func (a *auth) login(w http.ResponseWriter, r *http.Request) {
+//Auth is used for the authentication handlers, and hold all the
+// values needed for authentication.
+type Auth struct {
+	googleOauthConfig *oauth2.Config
+	oauthStateString  string
+	store             *sessions.CookieStore
+}
+
+//NewAuth will return *auth, with a prepared OauthConfig and CookieStore set.
+func NewAuth(proto string, host string, port string) *Auth {
+	key := os.Getenv("cookiestorekey")
+	if key == string("") {
+		log.Fatal("error fatal: no environment variable with the name 'cookiestorekey' found !")
+	}
+
+	return &Auth{
+		googleOauthConfig: newOauthConfig(proto, host, port),
+		store:             sessions.NewCookieStore([]byte(key)),
+	}
+}
+
+func (a *Auth) Run() {
+	http.HandleFunc("/login", a.login)
+	http.HandleFunc("/logout", a.logout)
+	http.HandleFunc("/callback", a.handleGoogleCallback)
+}
+
+func (a *Auth) login(w http.ResponseWriter, r *http.Request) {
 	//The idea here is to generate a new state string for each user
 	// who choose to login to the page.
 	// NB: There should be no reason to set this value to zero after
@@ -54,7 +81,7 @@ func (a *auth) login(w http.ResponseWriter, r *http.Request) {
 
 //logout will logout the user, and invalidate the session cookie
 // by setting the 'authenticated' key to false.
-func (a *auth) logout(w http.ResponseWriter, r *http.Request) {
+func (a *Auth) logout(w http.ResponseWriter, r *http.Request) {
 	var err error
 	session, err := a.store.Get(r, "cookie-name")
 	if err != nil {
@@ -73,8 +100,23 @@ func (a *auth) logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
-// -------------------------- OAUTH ---------------------------------------
-// ------------------------------------------------------------------------
+//IsAuthenticated is a wrapper to put around handlers you want
+// to protect with an authenticated user.
+func (a *Auth) IsAuthenticated(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		session, _ := a.store.Get(r, "cookie-name")
+		email, _ := session.Values["email"]
+		log.Printf("\n--- Authenticated user accessing page is : %v ---\n", email)
+
+		// Check if user is authenticated
+		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		h(w, r)
+	}
+}
 
 //newOauthConfig will return a *oauth2.Config with callback url
 // and ID & Secret from environment variables.
@@ -105,7 +147,7 @@ func newOauthConfig(proto string, host string, port string) *oauth2.Config {
 // we can then create a cookie with the value "authenticated" for the user.
 // We can then check later if that value is present in the cookie to grant
 // access to handlers.
-func (a *auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
+func (a *Auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	state := r.FormValue("state")
 	code := r.FormValue("code")
 
@@ -172,7 +214,7 @@ func (a *auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 //getUserInfo will get the information defined in 'scopes',
 // and return the values as a []byte.
-func (a *auth) getUserInfo(state string, token *oauth2.Token) ([]byte, error) {
+func (a *Auth) getUserInfo(state string, token *oauth2.Token) ([]byte, error) {
 	if state != a.oauthStateString {
 		return nil, fmt.Errorf("invalid oauth state")
 	}
@@ -191,45 +233,4 @@ func (a *auth) getUserInfo(state string, token *oauth2.Token) ([]byte, error) {
 	}
 
 	return contents, nil
-}
-
-// -------------------------Auth-------------------------------
-
-//auth is used for the authentication handlers, and hold all the
-// values needed for authentication.
-type auth struct {
-	googleOauthConfig *oauth2.Config
-	oauthStateString  string
-	store             *sessions.CookieStore
-}
-
-//newAuth will return *auth, with a prepared OauthConfig and CookieStore set.
-func newAuth(proto string, host string, port string) *auth {
-	key := os.Getenv("cookiestorekey")
-	if key == string("") {
-		log.Fatal("error fatal: no environment variable with the name 'cookiestorekey' found !")
-	}
-
-	return &auth{
-		googleOauthConfig: newOauthConfig(proto, host, port),
-		store:             sessions.NewCookieStore([]byte(key)),
-	}
-}
-
-//isAuthenticated is a wrapper to put around handlers you want
-// to protect with an authenticated user.
-func (a *auth) isAuthenticated(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		session, _ := a.store.Get(r, "cookie-name")
-		email, _ := session.Values["email"]
-		log.Printf("\n--- Authenticated user accessing page is : %v ---\n", email)
-
-		// Check if user is authenticated
-		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-			return
-		}
-
-		h(w, r)
-	}
 }
