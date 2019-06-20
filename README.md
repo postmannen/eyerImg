@@ -28,7 +28,7 @@ To build image
 
 ## Environment variables
 
-The programs expects the following  environment variables set.
+The programs expects the following  environment variables set for authentication against Google Cloud.
 
 ```
 cookiestorekey=some-cookie-store-key-here
@@ -40,4 +40,7 @@ The variables can be stored in a file called for example `exports`, and can then
 
 `docker run --env-file exports -p 80:80 eyerimg`
 
+## Google Cloud specific things
 
+Create an Oauth app under app credentials i Google Cloud Console.
+Set the callback URL to `http://<your domain name>:<some port>/callback`
