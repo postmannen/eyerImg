@@ -23,6 +23,9 @@ RUN go build -o main .
 CMD ["/app/main", "-proto=http://", "-host=eyer.io", "-port=:80", "-hostListen=0.0.0.0"]
 ```
 
+To build image
+`docker build -t eyerimg .`
+
 ## Environment variables
 
 The programs expects the following  environment variables set.
@@ -32,3 +35,9 @@ cookiestorekey=some-cookie-store-key-here
 googlekey=some-google-key-here
 googlesecret=some-google-secret-here
 ```
+
+The variables can be stored in a file called for example `exports`, and can then be implemented when starting the container like this.
+
+`docker run --env-file exports -p 80:80 eyerimg`
+
+
