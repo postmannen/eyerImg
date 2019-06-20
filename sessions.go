@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -29,17 +30,20 @@ func createRandomKey(size int) ([]byte, error) {
 	return b, nil
 }
 
-var (
-	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
-	// Note: Don't store your key in your source code. Pass it via an
-	// environmental variable, or flag (or both), and don't accidentally commit it
-	// alongside your code. Ensure your key is sufficiently random - i.e. use Go's
-	// crypto/rand or securecookie.GenerateRandomKey(32) and persist the result.
-	//
-	key = []byte(os.Getenv("cookiestorekey"))
-)
-
 func (a *auth) login(w http.ResponseWriter, r *http.Request) {
+	//The idea here is to generate a new state string for each user
+	// who choose to login to the page.
+	// NB: There should be no reason to set this value to zero after
+	// an authentication process is attemped, since the the only place
+	// this value is used is in the //callback handler. All other places
+	// where the tokenString might be needed after a user is logged in
+	// should get it's value from the session token.
+	stateStringRAW, err := createRandomKey(16)
+	if err != nil {
+		log.Println("error: failed to create state string: ", err)
+	}
+
+	a.oauthStateString = base64.URLEncoding.EncodeToString(stateStringRAW)
 
 	// Authentication goes here
 	// ...
@@ -48,7 +52,8 @@ func (a *auth) login(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-//logout will logout the user, and revoke the session cookie.
+//logout will logout the user, and invalidate the session cookie
+// by setting the 'authenticated' key to false.
 func (a *auth) logout(w http.ResponseWriter, r *http.Request) {
 	var err error
 	session, err := a.store.Get(r, "cookie-name")
@@ -71,11 +76,22 @@ func (a *auth) logout(w http.ResponseWriter, r *http.Request) {
 // -------------------------- OAUTH ---------------------------------------
 // ------------------------------------------------------------------------
 
+//newOauthConfig will return a *oauth2.Config with callback url
+// and ID & Secret from environment variables.
 func newOauthConfig() *oauth2.Config {
+	clientID := os.Getenv("googlekey")
+	if clientID == "" {
+		log.Fatal("No environment variable named googlekey is set !")
+	}
+	clientSecret := os.Getenv("googlesecret")
+	if clientSecret == "" {
+		log.Fatal("No environment variable named googlesecret is set !")
+	}
+
 	return &oauth2.Config{
 		RedirectURL:  "http://localhost:8080/callback",
-		ClientID:     os.Getenv("googlekey"),
-		ClientSecret: os.Getenv("googlesecret"),
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email",
 			"https://www.googleapis.com/auth/userinfo.profile"},
@@ -90,21 +106,8 @@ func newOauthConfig() *oauth2.Config {
 // We can then check later if that value is present in the cookie to grant
 // access to handlers.
 func (a *auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
-	//content, err := getUserInfo(r.FormValue("state"), r.FormValue("code"))
-	//if err != nil {
-	//	fmt.Println(err.Error())
-	//	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-	//	return
-	//}
-	//
-	//fmt.Fprintf(w, "Content: %s\n", content)
-
-	// ----------------------
-
 	state := r.FormValue("state")
 	code := r.FormValue("code")
-
-	fmt.Println(" *** Entering handleGoogleCallback function")
 
 	token, err := a.googleOauthConfig.Exchange(oauth2.NoContext, code)
 	if err != nil {
@@ -148,14 +151,15 @@ func (a *auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 		log.Println("error: store.Get in /login failed: ", err)
 	}
 
-	//TODO : session.Values["randomkey"] = randomKey
+	//set the session values to put into the cookie.
 	session.Values["authenticated"] = true
 	session.Values["id"] = userInfo.Id
 	session.Values["fullname"] = userInfo.FullName
 	session.Values["email"] = userInfo.Email
+	session.Values["state"] = state
 
-	//set token expire to 1 whole day
-	//session.Options = &sessions.Options{MaxAge: 60 * 60 * 24}
+	//set token expire to 8 hours.
+	session.Options = &sessions.Options{MaxAge: 60 * 60 * 8}
 	err = session.Save(r, w)
 	if err != nil {
 		log.Println("error: session.Save on /login: ", err)
@@ -166,6 +170,8 @@ func (a *auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//getUserInfo will get the information defined in 'scopes',
+// and return the values as a []byte.
 func (a *auth) getUserInfo(state string, token *oauth2.Token) ([]byte, error) {
 	if state != a.oauthStateString {
 		return nil, fmt.Errorf("invalid oauth state")
@@ -189,36 +195,40 @@ func (a *auth) getUserInfo(state string, token *oauth2.Token) ([]byte, error) {
 
 // -------------------------Auth-------------------------------
 
+//auth is used for the authentication handlers, and hold all the
+// values needed for authentication.
 type auth struct {
 	googleOauthConfig *oauth2.Config
 	oauthStateString  string
 	store             *sessions.CookieStore
 }
 
+//newAuth will return *auth, with a prepared OauthConfig and CookieStore set.
 func newAuth() *auth {
+	key := os.Getenv("cookiestorekey")
+	if key == string("") {
+		log.Fatal("error fatal: no environment variable with the name 'cookiestorekey' found !")
+	}
+
 	return &auth{
 		googleOauthConfig: newOauthConfig(),
-		//TODO: Replace with random value for each session.
-		// Move this inside the /login, and create a map for
-		// each user containing the State string for each
-		// authentication request, and eventually other
-		// variables tied to the individual user.
-		oauthStateString: "pseudo-random",
-		store:            sessions.NewCookieStore(key),
+		store:             sessions.NewCookieStore([]byte(key)),
 	}
 }
 
+//isAuthenticated is a wrapper to put around handlers you want
+// to protect with an authenticated user.
 func (a *auth) isAuthenticated(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// ********* SESSION ************
 		session, _ := a.store.Get(r, "cookie-name")
+		email, _ := session.Values["email"]
+		log.Printf("\n--- Authenticated used accessing page is : %v ---\n", email)
 
 		// Check if user is authenticated
 		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		// ******************************
 
 		h(w, r)
 	}

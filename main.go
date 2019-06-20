@@ -46,6 +46,9 @@ const (
 	serverListenPort = "0.0.0.0:8080"
 )
 
+//uploadImage will open a form for the user for uploading images.
+// 2 images will be produced in the function and saved to disk.
+// One main image, and one thumbnail.
 func (d *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 	if err := d.templ.ExecuteTemplate(w, "upload", d); err != nil {
 		log.Println("error: failed executing template for upload: ", err)
