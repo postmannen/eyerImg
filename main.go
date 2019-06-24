@@ -19,6 +19,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 
+	"github.com/mholt/certmagic"
 	"github.com/nfnt/resize"
 	"github.com/postmannen/authsession"
 )
@@ -165,9 +166,25 @@ func main() {
 
 	handlers(d, a)
 
-	fmt.Println("Web server started, listening at port ", *host+*port)
-	err := http.ListenAndServe(*hostListen+*port, nil)
+	if *proto == "http" {
+		fmt.Println("Web server started, listening at port ", *host+*port)
+		err := http.ListenAndServe(*hostListen+*port, nil)
+		if err != nil {
+			log.Println("error: ListenAndServer failed: ", err)
+			return
+		}
+		return
+	}
+
+	// read and agree to your CA's legal documents
+	certmagic.Default.Agreed = true
+	// provide an email address
+	certmagic.Default.Email = "you@yours.com"
+	// use the staging endpoint while we're developing
+	certmagic.Default.CA = certmagic.LetsEncryptStagingCA
+
+	err := certmagic.HTTPS([]string{"example.com", "www.example.com"}, nil)
 	if err != nil {
-		log.Println("error: ListenAndServer failed: ", err)
+		log.Println("error: cermagic.HTTPS failed: ", err)
 	}
 }
