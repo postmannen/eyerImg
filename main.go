@@ -149,10 +149,10 @@ func handlers(d *server, a *authsession.Auth) {
 
 func main() {
 	//Check flags
-	host := flag.String("host", "localhost", "The FQDN for the web server")
+	host := flag.String("host", "localhost", "The FQDN for the web server. Used for the client to know where to upload to.")
 	port := flag.String("port", ":8080", "The port, like :8080")
 	proto := flag.String("proto", "http://", "http:// or https://")
-	hostListen := flag.String("hostListen", "localhost", "The ip of the interfaceto listen. Typically 0.0.0.0 for an internet facing server")
+	hostListen := flag.String("hostListen", "localhost", "The ip of the interface where the web server will listen. Typically 0.0.0.0 for an internet facing server")
 	flag.Parse()
 
 	d := newServer(*proto, *host, *port)
