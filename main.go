@@ -128,7 +128,7 @@ func newServer(proto string, host string, port string) *server {
 
 	return &server{
 		templ:     t,
-		UploadURL: proto + host + port + "/upload",
+		UploadURL: proto + "://" + host + port + "/upload",
 	}
 }
 
@@ -151,7 +151,7 @@ func main() {
 	//Check flags
 	host := flag.String("host", "localhost", "The FQDN for the web server. Used for the client to know where to upload to.")
 	port := flag.String("port", ":8080", "The port, like :8080")
-	proto := flag.String("proto", "http://", "http:// or https://")
+	proto := flag.String("proto", "http", "http or https")
 	hostListen := flag.String("hostListen", "localhost", "The ip of the interface where the web server will listen. Typically 0.0.0.0 for an internet facing server")
 	flag.Parse()
 
