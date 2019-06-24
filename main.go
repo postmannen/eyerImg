@@ -17,6 +17,7 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 
 	"github.com/nfnt/resize"
 	"github.com/postmannen/authsession"
@@ -155,7 +156,11 @@ func main() {
 	flag.Parse()
 
 	d := newServer(*proto, *host, *port)
-	a := authsession.NewAuth(*proto, *host, *port)
+
+	cookieStoreKey := os.Getenv("cookiestorekey")
+	clientIDKey := os.Getenv("clientidkey")
+	clientSecret := os.Getenv("clientsecret")
+	a := authsession.NewAuth(*proto, *host, *port, cookieStoreKey, clientIDKey, clientSecret)
 	a.Run()
 
 	handlers(d, a)
