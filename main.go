@@ -183,7 +183,7 @@ func main() {
 	// use the staging endpoint while we're developing
 	certmagic.Default.CA = certmagic.LetsEncryptStagingCA
 
-	err := certmagic.HTTPS([]string{"example.com", "www.example.com"}, nil)
+	err := certmagic.HTTPS([]string{"eyer.io"}, nil)
 	if err != nil {
 		log.Println("error: cermagic.HTTPS failed: ", err)
 	}
