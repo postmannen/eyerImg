@@ -129,7 +129,7 @@ func newServer(proto string, host string, port string) *server {
 
 	return &server{
 		templ:     t,
-		UploadURL: proto + "://" + host + port + "/upload",
+		UploadURL: proto + "://" + host + ":" + port + "/upload",
 	}
 }
 
@@ -151,7 +151,7 @@ func handlers(d *server, a *authsession.Auth) {
 func main() {
 	//Check flags
 	host := flag.String("host", "localhost", "The FQDN for the web server. Used for the client to know where to upload to.")
-	port := flag.String("port", ":8080", "The port, like :8080")
+	port := flag.String("port", "8080", "The port, like 8080")
 	proto := flag.String("proto", "http", "http or https")
 	hostListen := flag.String("hostListen", "localhost", "The ip of the interface where the web server will listen. Typically 0.0.0.0 for an internet facing server")
 	flag.Parse()
@@ -166,25 +166,28 @@ func main() {
 
 	handlers(d, a)
 
-	if *proto == "http" {
-		fmt.Println("Web server started, listening at port ", *host+*port)
-		err := http.ListenAndServe(*hostListen+*port, nil)
+	fmt.Printf("The value of *proto = %#v\n", *proto)
+
+	if *proto == "https" {
+		// read and agree to your CA's legal documents
+		certmagic.Default.Agreed = true
+		// provide an email address
+		certmagic.Default.Email = "you@yours.com"
+		// use the staging endpoint while we're developing
+		certmagic.Default.CA = certmagic.LetsEncryptStagingCA
+
+		err := certmagic.HTTPS([]string{"eyer.io"}, nil)
 		if err != nil {
-			log.Println("error: ListenAndServer failed: ", err)
+			fmt.Println("--- error: cermagic.HTTPS failed: ", err)
 			return
 		}
-		return
+
 	}
 
-	// read and agree to your CA's legal documents
-	certmagic.Default.Agreed = true
-	// provide an email address
-	certmagic.Default.Email = "you@yours.com"
-	// use the staging endpoint while we're developing
-	certmagic.Default.CA = certmagic.LetsEncryptStagingCA
-
-	err := certmagic.HTTPS([]string{"eyer.io"}, nil)
+	fmt.Println("Web server started, listening at port ", *host+*port)
+	err := http.ListenAndServe(*hostListen+":"+*port, nil)
 	if err != nil {
-		log.Println("error: cermagic.HTTPS failed: ", err)
+		log.Println("error: ListenAndServer failed: ", err)
+		return
 	}
 }
