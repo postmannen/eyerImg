@@ -156,18 +156,22 @@ func main() {
 	hostListen := flag.String("hostListen", "localhost", "The ip of the interface where the web server will listen. Typically 0.0.0.0 for an internet facing server")
 	flag.Parse()
 
+	//Greate a new server type that will hold all handlers, and web variable data.
 	d := newServer(*proto, *host, *port)
 
+	//Get secret values for authenticating to the google cloud app
+	// from environment variables. Then create a new 'auth', and start it.
 	cookieStoreKey := os.Getenv("cookiestorekey")
 	clientIDKey := os.Getenv("clientidkey")
 	clientSecret := os.Getenv("clientsecret")
 	a := authsession.NewAuth(*proto, *host, *port, cookieStoreKey, clientIDKey, clientSecret)
 	a.Run()
 
+	//Initialize the handlers for this program.
 	handlers(d, a)
 
-	fmt.Printf("The value of *proto = %#v\n", *proto)
-
+	//if the -proto flag is given 'http', we start a https session
+	// with a certificate from letsencrypt.
 	if *proto == "https" {
 		// read and agree to your CA's legal documents
 		certmagic.Default.Agreed = true
@@ -178,13 +182,15 @@ func main() {
 
 		err := certmagic.HTTPS([]string{"eyer.io"}, nil)
 		if err != nil {
-			fmt.Println("--- error: cermagic.HTTPS failed: ", err)
+			log.Println("--- error: cermagic.HTTPS failed: ", err)
 			return
 		}
 
 	}
 
-	fmt.Println("Web server started, listening at port ", *host+*port)
+	//If no -proto flag was given it will default to serving the page
+	// over http.
+	log.Println("Web server started, listening at port ", *host+*port)
 	err := http.ListenAndServe(*hostListen+":"+*port, nil)
 	if err != nil {
 		log.Println("error: ListenAndServer failed: ", err)

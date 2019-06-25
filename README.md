@@ -5,6 +5,15 @@ Web service with Authentication against Google, and image upload to local disk o
 
 ## To use
 
+Start locally, just http.
+`go run *go -host=localhost -hostListen=localhost -port="8080" -proto="http"`
+
+Start externally with https, will also redirect http call to https.
+`go run *go -host=eyer.io -port=443 -proto=https`
+We don't have to specify the -hostListen when running https.
+
+## To use with Docker
+
 The repository includes a Dockerfile
 
 Replaces the CMD values to fit your setup.
@@ -20,7 +29,7 @@ RUN go get github.com/nfnt/resize
 RUN go get golang.org/x/oauth2
 RUN go get golang.org/x/oauth2/google
 RUN go build -o main .
-CMD ["/app/main", "-proto=http://", "-host=eyer.io", "-port=:80", "-hostListen=0.0.0.0"]
+CMD ["/app/main", "-proto=http", "-host=eyer.io", "-port=:80", "-hostListen=0.0.0.0"]
 ```
 
 To build image
