@@ -10,8 +10,7 @@
 
   <body>
 
-    {{template "body1"}}
-
+    {{template "body1" .}}
   </body>
 
 </html>
@@ -67,25 +66,7 @@
   </div>
 
   <div id="navMenu" class="navbar-menu">
-    <!--
-    <div class="navbar-start">
-      <div class="navbar-item has-dropdown is-hoverable">
-        <a class="navbar-link  is-active" href="/documentation/overview/start/">
-          Docs
-        </a>
-        <div class="navbar-dropdown ">
-          <a class="navbar-item " href="/documentation/overview/start/">
-            Overview
-          </a>
-          <a class="navbar-item " href="http://bulma.io/documentation/modifiers/syntax/">
-            Modifiers
-          </a>
 
-          <hr class="navbar-divider">
-
-        </div>
-      </div>
-      -->
     <a class="navbar-item " href="/login">
       <span class="bd-emoji"> 🔐</span> &nbsp;Login
     </a>
@@ -94,16 +75,34 @@
       <span class="bd-emoji"> 🔓</span> &nbsp;Logout
     </a>
 
-
     <a class="navbar-item " href="/upload">
       <span class="bd-emoji"> 💾</span> &nbsp;Upload
     </a>
+
+    <a class="navbar-item " href="/upload">
+      <span class="bd-emoji"> 💾</span> &nbsp;{{.Email}}
+    </a>
+
   </div>
+
+  <div class="navbar-end">
+    <div class="navbar-item">
+      <div class="buttons">
+        <a class="button is-primary" {{if not .Authenticated}} href="/login" {{end}}>
+          <strong>{{if .Authenticated}} {{.Email}}
+            {{else}} Sign In {{end}}</strong>
+        </a>
+
+      </div>
+
+    </div>
 
   </div>
 </nav>
 
 <script>
+  //Script to get an event when the Burger menu is pressed,
+  // so it will show items in that menu when on mobile screen.
   document.addEventListener('DOMContentLoaded', () => {
 
     // Get all "navbar-burger" elements
@@ -134,5 +133,5 @@
 
 
 {{define "body1"}}
-{{template "topSection"}}
+{{template "topSection" .}}
 {{end}}
