@@ -8,6 +8,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -53,14 +54,26 @@ type TokenData struct {
 
 //mainPage is the main web page.
 func (d *server) mainPage(w http.ResponseWriter, r *http.Request) {
-	session, _ := d.store.Get(r, "cookie-name")
-
-	tplData := TokenData{
-		Email:         session.Values["email"].(string),
-		Authenticated: session.Values["authenticated"].(bool),
+	var err error
+	session, err := d.store.Get(r, "cookie-name")
+	if err != nil {
+		log.Printf("--- error: d.store.get failed: %v\n", err)
 	}
 
-	err := d.templ.ExecuteTemplate(w, "mainHTML", tplData)
+	tplData := TokenData{}
+	//Since the session values are a map we have to check if there is actual
+	// values in the map before we try to convert below, or else it will panic.
+	if session.Values["authenticated"] != nil {
+		tplData = TokenData{
+			Email:         session.Values["email"].(string),
+			Authenticated: session.Values["authenticated"].(bool),
+		}
+		fmt.Println("--- email : ", session.Values["email"].(string))
+		fmt.Println("--- auth : ", session.Values["authenticated"].(bool))
+
+	}
+
+	err = d.templ.ExecuteTemplate(w, "mainHTML", tplData)
 	if err != nil {
 		log.Println("error: executing template: ", err)
 	}

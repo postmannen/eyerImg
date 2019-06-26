@@ -88,6 +88,13 @@
   <div class="navbar-end">
     <div class="navbar-item">
       <div class="buttons">
+        {{if .Authenticated}}
+        <a class="button is-primary" href="/logout">
+          <strong>Logout</strong>
+        </a>
+
+        {{end}}
+
         <a class="button is-primary" {{if not .Authenticated}} href="/login" {{end}}>
           <strong>{{if .Authenticated}} {{.Email}}
             {{else}} Sign In {{end}}</strong>
