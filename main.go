@@ -52,6 +52,40 @@ type TokenData struct {
 	Email         string
 }
 
+func (d *server) authorized(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		allowedUser := make(map[string]bool)
+		//allowedUser["postmannen@gmail.com"] = true
+		allowedUser["hanslad@gmail.com"] = true
+		allowedUser["oeystbe2@gmail.com"] = true
+
+		var err error
+		session, err := d.store.Get(r, "cookie-name")
+		if err != nil {
+			log.Printf("--- error: d.store.get failed: %v\n", err)
+		}
+
+		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			log.Println("info: user not authenticated")
+			return
+		}
+
+		if eMail, ok := session.Values["email"].(string); !ok || eMail != "" {
+			_, ok := allowedUser[eMail]
+			if !ok {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				log.Println("info: mail not allowed: ", eMail)
+				return
+			}
+		}
+
+		h(w, r)
+
+	}
+
+}
+
 //mainPage is the main web page.
 func (d *server) mainPage(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -84,7 +118,7 @@ func (d *server) mainPage(w http.ResponseWriter, r *http.Request) {
 func handlers(d *server, a *authsession.Auth) {
 	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
 	http.HandleFunc("/", d.mainPage)
-	http.HandleFunc("/upload", a.IsAuthenticated(d.uploadImage))
+	http.HandleFunc("/upload", d.authorized(a.IsAuthenticated(d.uploadImage)))
 }
 
 func main() {
