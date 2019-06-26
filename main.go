@@ -8,7 +8,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -25,9 +24,11 @@ import (
 // -------------------------------- Main HTTP ----------------------------
 
 type server struct {
-	templ     *template.Template
-	UploadURL string //the whole url for upload, ex. http://fqdn/upload
-	store     *sessions.CookieStore
+	templ         *template.Template
+	UploadURL     string //the whole url for upload, ex. http://fqdn/upload
+	store         *sessions.CookieStore
+	Email         string
+	Authenticated bool
 }
 
 //newServer will return a *server, and will hold all the
@@ -45,49 +46,64 @@ func newServer(proto string, host string, port string, store *sessions.CookieSto
 	}
 }
 
+//TokenData is the type describing the information gathered from the token.
 type TokenData struct {
 	Authenticated bool
 	ID            string
 	Fullame       string
 	Email         string
+	UploadURL     string //the whole url for upload, ex. http://fqdn/upload
 }
 
+//authorized will check if the user is authenticated and authorized for page.
 func (d *server) authorized(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		//Map to work as authorization scheme.
 		allowedUser := make(map[string]bool)
-		//allowedUser["postmannen@gmail.com"] = true
+		allowedUser["postmannen@gmail.com"] = true
 		allowedUser["hanslad@gmail.com"] = true
 		allowedUser["oeystbe2@gmail.com"] = true
 
+		//Check for cookie, and if found put the result in 'session'.
 		var err error
 		session, err := d.store.Get(r, "cookie-name")
 		if err != nil {
 			log.Printf("--- error: d.store.get failed: %v\n", err)
 		}
 
+		//Check if user is authenticated.
 		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			http.Error(w, "Not authenticated", http.StatusForbidden)
 			log.Println("info: user not authenticated")
 			return
 		}
 
+		//Check if user if authorized for access to page.
 		if eMail, ok := session.Values["email"].(string); !ok || eMail != "" {
 			_, ok := allowedUser[eMail]
 			if !ok {
-				http.Error(w, "Forbidden", http.StatusForbidden)
-				log.Println("info: mail not allowed: ", eMail)
+				http.Error(w, "Not authorized..", http.StatusForbidden)
+				log.Println("info: not authorized: ", eMail)
 				return
 			}
 		}
 
+		d.Email = session.Values["email"].(string)
+		d.Authenticated = session.Values["authenticated"].(bool)
+
+		//We need to execute the HandlerFunc.
 		h(w, r)
 
 	}
 
 }
 
-//mainPage is the main web page.
-func (d *server) mainPage(w http.ResponseWriter, r *http.Request) {
+//prepTemplateData will will gather user information and other data from
+// the *server type to use inside the template.
+// The idea with this function is that we don't pass the whole *server
+// struct into the template, only the data we need, and for one specific
+// user.
+func (d *server) prepTemplateData(r *http.Request) TokenData {
 	var err error
 	session, err := d.store.Get(r, "cookie-name")
 	if err != nil {
@@ -101,11 +117,20 @@ func (d *server) mainPage(w http.ResponseWriter, r *http.Request) {
 		tplData = TokenData{
 			Email:         session.Values["email"].(string),
 			Authenticated: session.Values["authenticated"].(bool),
+			UploadURL:     d.UploadURL,
 		}
-		fmt.Println("--- email : ", session.Values["email"].(string))
-		fmt.Println("--- auth : ", session.Values["authenticated"].(bool))
-
+		return tplData
 	}
+
+	return tplData
+}
+
+//mainPage is the main web page.
+func (d *server) mainPage(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	//get information about user from token, to use with template.
+	tplData := d.prepTemplateData(r)
 
 	err = d.templ.ExecuteTemplate(w, "mainHTML", tplData)
 	if err != nil {
@@ -118,7 +143,7 @@ func (d *server) mainPage(w http.ResponseWriter, r *http.Request) {
 func handlers(d *server, a *authsession.Auth) {
 	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
 	http.HandleFunc("/", d.mainPage)
-	http.HandleFunc("/upload", d.authorized(a.IsAuthenticated(d.uploadImage)))
+	http.HandleFunc("/upload", d.authorized(d.uploadImage))
 }
 
 func main() {
@@ -130,10 +155,12 @@ func main() {
 	flag.Parse()
 
 	//Get secret values for authenticating to the google cloud app
-	// from environment variables. Then create a new 'auth', and start it.
+	// from environment variables.
 	cookieStoreKey := os.Getenv("cookiestorekey")
 	clientIDKey := os.Getenv("clientidkey")
 	clientSecret := os.Getenv("clientsecret")
+
+	//Prepare and start the authentication functionality.
 	a, store := authsession.NewAuth(*proto, *host, *port, cookieStoreKey, clientIDKey, clientSecret)
 	a.Run()
 

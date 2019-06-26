@@ -22,11 +22,14 @@ const (
 // 2 images will be produced in the function and saved to disk.
 // One main image, and one thumbnail.
 func (d *server) uploadImage(w http.ResponseWriter, r *http.Request) {
-	if err := d.templ.ExecuteTemplate(w, "upload", d); err != nil {
+	var err error
+
+	//prepare data to use in template.
+	tplData := d.prepTemplateData(r)
+
+	if err := d.templ.ExecuteTemplate(w, "upload", tplData); err != nil {
 		log.Println("error: failed executing template for upload: ", err)
 	}
-
-	var err error
 
 	//Takes max size of form to parse, so here we can limit the size of the image to upload.
 	err = r.ParseMultipartForm(32 << 20)
