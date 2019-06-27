@@ -7,6 +7,7 @@ import (
 	"github.com/boltdb/bolt"
 )
 
+//dbUpdate will put key/values in a specified db, and in a specified bucket.
 func dbUpdate(db *bolt.DB, bucketName string, key string, value string) error {
 	err := db.Update(func(tx *bolt.Tx) error {
 		//Create a bucket
@@ -27,6 +28,7 @@ func dbUpdate(db *bolt.DB, bucketName string, key string, value string) error {
 	return err
 }
 
+//dbViewSingle will look up the value for a specified key.
 func dbViewSingle(db *bolt.DB, bucketName string, key string) (string, error) {
 	var value string
 	//View is a help function to get values out of the database.
@@ -48,6 +50,7 @@ func dbViewSingle(db *bolt.DB, bucketName string, key string) (string, error) {
 
 }
 
+//dbViewAll will get all the key/values from a specified bucket.
 func dbViewAll(db *bolt.DB, bucketName string) (map[string]string, error) {
 	//Map for returning the key values in the db.
 	m := make(map[string]string)
@@ -65,9 +68,10 @@ func dbViewAll(db *bolt.DB, bucketName string) (map[string]string, error) {
 			return fmt.Errorf("error: bucket does not exist: value : %v", bu)
 		}
 
+		//create a cursor, go to the first key in the db,
+		// then iterate all key's with next.
 		cursor := bu.Cursor()
 		cursor.First()
-
 		for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
 			m[string(k)] = string(v)
 			//fmt.Printf("key=%s, value=%s\n", k, v)
