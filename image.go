@@ -9,6 +9,8 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"strings"
 
 	"github.com/nfnt/resize"
 )
@@ -55,11 +57,12 @@ func (d *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 
 	// ------------------------- Creating main image ----------------------------------
 
-	mainOutFile, err := ioutil.TempFile("./", "tmp100-*.jpg")
+	mainOutFile, err := ioutil.TempFile("./", "*.jpg")
 	if err != nil {
 		log.Println("error: creating TempFile: ", err)
 		return
 	}
+	fileNameMain := mainOutFile.Name()
 
 	if err := shrinkImage(inFile, mainOutFile, thumbnailSize); err != nil {
 		log.Println("error: shrink image failed: ", err)
@@ -67,10 +70,14 @@ func (d *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 
 	mainOutFile.Close()
 	// ------------------------- Creating thumbnail ----------------------------------
-	thumbOutFile, err := ioutil.TempFile("./", "tmp400-*.jpg")
+	splitName := strings.Split(fileNameMain, ".")
+
+	thumbOutFile, err := os.Create(splitName[0] + "tmb" + ".jpg")
 	if err != nil {
 		log.Println("error: creating TempFile: ", err)
 	}
+
+	fileNameThumb := thumbOutFile.Name()
 
 	//Seek back to the beginning of the file, so we can read it once more.
 	_, err = inFile.Seek(0, 0)
@@ -81,6 +88,12 @@ func (d *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 	if err := shrinkImage(inFile, thumbOutFile, mainImageSize); err != nil {
 		log.Println("error: shrink image failed: ", err)
 	}
+
+	fmt.Println("----------- preparing to update db")
+	dbUpdate(d.db, "pictures", fileNameThumb, fileNameMain)
+	fmt.Println("---------- done storing to db --------------------")
+	dbViewAll(d.db, "pictures")
+	fmt.Println("---------- done viewing db --------------------")
 
 	thumbOutFile.Close()
 }

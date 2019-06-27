@@ -14,6 +14,8 @@ import (
 	_ "net/http/pprof"
 	"os"
 
+	"github.com/boltdb/bolt"
+
 	"github.com/gorilla/sessions"
 
 	"github.com/mholt/certmagic"
@@ -29,6 +31,7 @@ type server struct {
 	store         *sessions.CookieStore
 	Email         string
 	Authenticated bool
+	db            *bolt.DB
 }
 
 //newServer will return a *server, and will hold all the
@@ -147,6 +150,8 @@ func handlers(d *server, a *authsession.Auth) {
 }
 
 func main() {
+	var err error
+
 	//Check flags
 	host := flag.String("host", "localhost", "The FQDN for the web server. Used for the client to know where to upload to.")
 	port := flag.String("port", "8080", "The port, like 8080")
@@ -165,10 +170,10 @@ func main() {
 	a.Run()
 
 	//Greate a new server type that will hold all handlers, and web variable data.
-	d := newServer(*proto, *host, *port, store)
+	s := newServer(*proto, *host, *port, store)
 
 	//Initialize the handlers for this program.
-	handlers(d, a)
+	handlers(s, a)
 
 	//if the -proto flag is given 'http', we start a https session
 	// with a certificate from letsencrypt.
@@ -188,10 +193,19 @@ func main() {
 
 	}
 
+	//open takes the file name, permissions for that file, and database options.
+	s.db, err = bolt.Open("./db", 0600, nil)
+	if err != nil {
+		//If we cannot open a db we close the program and print the error
+		log.Fatalln("error: bolt.Open: ", err)
+	}
+
+	defer s.db.Close()
+
 	//If no -proto flag was given it will default to serving the page
 	// over http.
 	log.Println("Web server started, listening at port ", *host+*port)
-	err := http.ListenAndServe(*hostListen+":"+*port, nil)
+	err = http.ListenAndServe(*hostListen+":"+*port, nil)
 	if err != nil {
 		log.Println("error: ListenAndServer failed: ", err)
 		return
