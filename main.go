@@ -59,7 +59,7 @@ type TokenData struct {
 }
 
 //authorized will check if the user is authenticated and authorized for page.
-func (d *server) authorized(h http.HandlerFunc) http.HandlerFunc {
+func (s *server) authorized(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//Map to work as authorization scheme.
 		allowedUser := make(map[string]bool)
@@ -69,7 +69,7 @@ func (d *server) authorized(h http.HandlerFunc) http.HandlerFunc {
 
 		//Check for cookie, and if found put the result in 'session'.
 		var err error
-		session, err := d.store.Get(r, "cookie-name")
+		session, err := s.store.Get(r, "cookie-name")
 		if err != nil {
 			log.Printf("--- error: d.store.get failed: %v\n", err)
 		}
@@ -91,8 +91,8 @@ func (d *server) authorized(h http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
-		d.Email = session.Values["email"].(string)
-		d.Authenticated = session.Values["authenticated"].(bool)
+		s.Email = session.Values["email"].(string)
+		s.Authenticated = session.Values["authenticated"].(bool)
 
 		//We need to execute the HandlerFunc.
 		h(w, r)
@@ -106,9 +106,9 @@ func (d *server) authorized(h http.HandlerFunc) http.HandlerFunc {
 // The idea with this function is that we don't pass the whole *server
 // struct into the template, only the data we need, and for one specific
 // user.
-func (d *server) prepTemplateData(r *http.Request) TokenData {
+func (s *server) prepTemplateData(r *http.Request) TokenData {
 	var err error
-	session, err := d.store.Get(r, "cookie-name")
+	session, err := s.store.Get(r, "cookie-name")
 	if err != nil {
 		log.Printf("--- error: d.store.get failed: %v\n", err)
 	}
@@ -120,7 +120,7 @@ func (d *server) prepTemplateData(r *http.Request) TokenData {
 		tplData = TokenData{
 			Email:         session.Values["email"].(string),
 			Authenticated: session.Values["authenticated"].(bool),
-			UploadURL:     d.UploadURL,
+			UploadURL:     s.UploadURL,
 		}
 		return tplData
 	}
@@ -129,13 +129,13 @@ func (d *server) prepTemplateData(r *http.Request) TokenData {
 }
 
 //mainPage is the main web page.
-func (d *server) mainPage(w http.ResponseWriter, r *http.Request) {
+func (s *server) mainPage(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	//get information about user from token, to use with template.
-	tplData := d.prepTemplateData(r)
+	tplData := s.prepTemplateData(r)
 
-	err = d.templ.ExecuteTemplate(w, "mainHTML", tplData)
+	err = s.templ.ExecuteTemplate(w, "mainHTML", tplData)
 	if err != nil {
 		log.Println("error: executing template: ", err)
 	}
@@ -143,11 +143,13 @@ func (d *server) mainPage(w http.ResponseWriter, r *http.Request) {
 }
 
 //handlers contains all the handlers used for this service.
-func handlers(d *server, a *authsession.Auth) {
+func handlers(s *server, a *authsession.Auth) {
 	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
-	http.HandleFunc("/", d.mainPage)
-	http.HandleFunc("/upload", d.authorized(d.uploadImage))
+	http.HandleFunc("/", s.mainPage)
+	http.HandleFunc("/upload", s.authorized(s.uploadImage))
 }
+
+const dbName = "./db.bolt"
 
 func main() {
 	var err error
@@ -170,10 +172,10 @@ func main() {
 	a.Run()
 
 	//Greate a new server type that will hold all handlers, and web variable data.
-	s := newServer(*proto, *host, *port, store)
+	srv := newServer(*proto, *host, *port, store)
 
 	//Initialize the handlers for this program.
-	handlers(s, a)
+	handlers(srv, a)
 
 	//if the -proto flag is given 'http', we start a https session
 	// with a certificate from letsencrypt.
@@ -194,13 +196,13 @@ func main() {
 	}
 
 	//open takes the file name, permissions for that file, and database options.
-	s.db, err = bolt.Open("./db", 0600, nil)
+	srv.db, err = bolt.Open(dbName, 0600, nil)
 	if err != nil {
 		//If we cannot open a db we close the program and print the error
 		log.Fatalln("error: bolt.Open: ", err)
 	}
 
-	defer s.db.Close()
+	defer srv.db.Close()
 
 	//If no -proto flag was given it will default to serving the page
 	// over http.

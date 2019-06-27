@@ -47,7 +47,10 @@ func dbViewSingle(db *bolt.DB, bucketName string, key string) (string, error) {
 
 }
 
-func dbViewAll(db *bolt.DB, bucketName string) error {
+func dbViewAll(db *bolt.DB, bucketName string) (map[string]string, error) {
+	//Map for returning the key values in the db.
+	m := make(map[string]string)
+
 	err := db.View(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte(bucketName))
 		cursor := bu.Cursor()
@@ -56,12 +59,16 @@ func dbViewAll(db *bolt.DB, bucketName string) error {
 		fmt.Println("first key/value = ", k, v)
 
 		for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
-			fmt.Printf("key=%s, value=%s\n", k, v)
+			m[string(k)] = string(v)
+			//fmt.Printf("key=%s, value=%s\n", k, v)
 		}
 
 		return nil
 	})
 
-	return err
+	if err != nil {
+		return nil, fmt.Errorf("error: viewing all items in db: %v", err)
+	}
 
+	return m, err
 }

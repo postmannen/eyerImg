@@ -20,16 +20,18 @@ const (
 	thumbnailSize = 200
 )
 
+const picturePath = "./pictures/"
+
 //uploadImage will open a form for the user for uploading images.
 // 2 images will be produced in the function and saved to disk.
 // One main image, and one thumbnail.
-func (d *server) uploadImage(w http.ResponseWriter, r *http.Request) {
+func (s *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	//prepare data to use in template.
-	tplData := d.prepTemplateData(r)
+	tplData := s.prepTemplateData(r)
 
-	if err := d.templ.ExecuteTemplate(w, "upload", tplData); err != nil {
+	if err := s.templ.ExecuteTemplate(w, "upload", tplData); err != nil {
 		log.Println("error: failed executing template for upload: ", err)
 	}
 
@@ -57,7 +59,7 @@ func (d *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 
 	// ------------------------- Creating main image ----------------------------------
 
-	mainOutFile, err := ioutil.TempFile("./", "*.jpg")
+	mainOutFile, err := ioutil.TempFile(picturePath, "*.jpg")
 	if err != nil {
 		log.Println("error: creating TempFile: ", err)
 		return
@@ -90,10 +92,18 @@ func (d *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("----------- preparing to update db")
-	dbUpdate(d.db, "pictures", fileNameThumb, fileNameMain)
+	err = dbUpdate(s.db, "pictures", fileNameThumb, fileNameMain)
+	if err != nil {
+		log.Println("error: failed to update db with new key/value: ", err)
+	}
 	fmt.Println("---------- done storing to db --------------------")
-	dbViewAll(d.db, "pictures")
+	picMap, err := dbViewAll(s.db, "pictures")
+	if err != nil {
+		log.Println("error: failed failed to get key/values from db: ", err)
+	}
 	fmt.Println("---------- done viewing db --------------------")
+
+	fmt.Fprintf(w, "%v\n", picMap)
 
 	thumbOutFile.Close()
 }
