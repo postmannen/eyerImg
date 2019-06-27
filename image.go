@@ -123,6 +123,15 @@ func (s *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 	//tplData.PictureMap = picMap
 	//
 	thumbOutFile.Close()
+
+	//parse the request to check if the upload button was pressed.
+	// If the button was pressed call a template who will redirect
+	// to a new /upload page to update shown images on page.
+	// TODO: The picture update should be replaced with a websocket.
+	r.ParseForm()
+	if r.FormValue("fileSubmit") == "upload" {
+		s.templ.ExecuteTemplate(w, "redirectToUpload", nil)
+	}
 }
 
 //shrinkImage will shrink an image to the width specified in size, and keep

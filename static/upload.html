@@ -29,7 +29,7 @@
               </label>
             </div>
 
-            <input class="button is-fullwidth is-centered" type="submit" value="upload" />
+            <input class="button is-fullwidth is-centered" type="submit" name="fileSubmit" value="upload" />
 
           </div>
         </div>
@@ -58,4 +58,8 @@
 {{range $key,$value := .PictureMap}}
 <img src="{{$key}}" alt="{{$key}}">
 {{end}}
+{{end}}
+
+{{define "redirectToUpload"}}
+<meta http-equiv="refresh" content="0; URL=/upload">
 {{end}}
