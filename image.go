@@ -31,6 +31,19 @@ func (s *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 	//prepare data to use in template.
 	tplData := s.prepTemplateData(r)
 
+	fmt.Println("------------------BEFORE VIEWALL")
+	picMap, err := dbViewAll(s.db, "pictures")
+	if err != nil {
+		log.Println("error: failed failed to get key/values from db: ", err)
+	}
+
+	fmt.Println("------------------AFTER VIEWALL")
+	//We store the picMap in the TemplateData struct, so we can use it's
+	// values inside the template.
+	tplData.PictureMap = picMap
+
+	//---TESTEND
+
 	if err := s.templ.ExecuteTemplate(w, "upload", tplData); err != nil {
 		log.Println("error: failed executing template for upload: ", err)
 	}
@@ -97,14 +110,18 @@ func (s *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 		log.Println("error: failed to update db with new key/value: ", err)
 	}
 	fmt.Println("---------- done storing to db --------------------")
-	picMap, err := dbViewAll(s.db, "pictures")
-	if err != nil {
-		log.Println("error: failed failed to get key/values from db: ", err)
-	}
-	fmt.Println("---------- done viewing db --------------------")
-
-	fmt.Fprintf(w, "%v\n", picMap)
-
+	//picMap, err := dbViewAll(s.db, "pictures")
+	//if err != nil {
+	//	log.Println("error: failed failed to get key/values from db: ", err)
+	//}
+	//fmt.Println("---------- done viewing db --------------------")
+	//
+	//fmt.Fprintf(w, "%v\n", picMap)
+	//
+	////We store the picMap in the TemplateData struct, so we can use it's
+	//// values inside the template.
+	//tplData.PictureMap = picMap
+	//
 	thumbOutFile.Close()
 }
 

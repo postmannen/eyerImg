@@ -49,13 +49,14 @@ func newServer(proto string, host string, port string, store *sessions.CookieSto
 	}
 }
 
-//TokenData is the type describing the information gathered from the token.
-type TokenData struct {
+//TemplateData is the type describing the information gathered from the token.
+type TemplateData struct {
 	Authenticated bool
 	ID            string
 	Fullame       string
 	Email         string
 	UploadURL     string //the whole url for upload, ex. http://fqdn/upload
+	PictureMap    map[string]string
 }
 
 //authorized will check if the user is authenticated and authorized for page.
@@ -106,18 +107,18 @@ func (s *server) authorized(h http.HandlerFunc) http.HandlerFunc {
 // The idea with this function is that we don't pass the whole *server
 // struct into the template, only the data we need, and for one specific
 // user.
-func (s *server) prepTemplateData(r *http.Request) TokenData {
+func (s *server) prepTemplateData(r *http.Request) TemplateData {
 	var err error
 	session, err := s.store.Get(r, "cookie-name")
 	if err != nil {
 		log.Printf("--- error: d.store.get failed: %v\n", err)
 	}
 
-	tplData := TokenData{}
+	tplData := TemplateData{}
 	//Since the session values are a map we have to check if there is actual
 	// values in the map before we try to convert below, or else it will panic.
 	if session.Values["authenticated"] != nil {
-		tplData = TokenData{
+		tplData = TemplateData{
 			Email:         session.Values["email"].(string),
 			Authenticated: session.Values["authenticated"].(bool),
 			UploadURL:     s.UploadURL,
@@ -145,6 +146,7 @@ func (s *server) mainPage(w http.ResponseWriter, r *http.Request) {
 //handlers contains all the handlers used for this service.
 func handlers(s *server, a *authsession.Auth) {
 	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
+	http.Handle("/pictures/", http.StripPrefix("/pictures", http.FileServer(http.Dir("./pictures"))))
 	http.HandleFunc("/", s.mainPage)
 	http.HandleFunc("/upload", s.authorized(s.uploadImage))
 }

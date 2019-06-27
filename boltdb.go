@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/boltdb/bolt"
 )
@@ -51,12 +52,21 @@ func dbViewAll(db *bolt.DB, bucketName string) (map[string]string, error) {
 	//Map for returning the key values in the db.
 	m := make(map[string]string)
 
+	fmt.Println("*************************1")
 	err := db.View(func(tx *bolt.Tx) error {
-		bu := tx.Bucket([]byte(bucketName))
-		cursor := bu.Cursor()
 
-		k, v := cursor.First()
-		fmt.Println("first key/value = ", k, v)
+		fmt.Printf("*************************2\n")
+		bu := tx.Bucket([]byte(bucketName))
+		//Check if tx.Bucket returns nil, and return if nil,
+		// if it was nil and we did continue it will panic
+		// on the first use of the bucket, since it does not exist.
+		if bu == nil {
+			log.Println("error: bucket does not exist: ", bu)
+			return fmt.Errorf("error: bucket does not exist: value : %v", bu)
+		}
+
+		cursor := bu.Cursor()
+		cursor.First()
 
 		for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
 			m[string(k)] = string(v)

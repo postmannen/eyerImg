@@ -29,29 +29,13 @@
               </label>
             </div>
 
-            <!--
-            <div class="field">
-              <div class="file is-normal is-centered is-boxed">
-                <label class="file-label">
-                  <input class="file-input" id="file" type="file" name="myFile">
-                  <span class="file-cta">
-                    <span class="file-icon">
-                      <i class="fas fa-upload"></i>
-                    </span>
-                    <span class="file-label" id="filename">
-                      Select File here
-                    </span>
-                  </span>
-                </label>
-              </div>
-            </div>
-          -->
-
             <input class="button is-fullwidth is-centered" type="submit" value="upload" />
 
           </div>
         </div>
-        <div class="column"></div>
+        <div class="column">
+          {{template "showPictures" .}}
+        </div>
         <div class="column"></div>
         <div class="column"></div>
       </div>
@@ -68,4 +52,10 @@
     }
   };
 </script>
+{{end}}
+
+{{define "showPictures"}}
+{{range $key,$value := .PictureMap}}
+<img src="{{$key}}" alt="{{$key}}">
+{{end}}
 {{end}}
