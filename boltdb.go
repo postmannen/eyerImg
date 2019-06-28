@@ -9,17 +9,21 @@ import (
 
 //dbUpdate will put key/values in a specified db, and in a specified bucket.
 func dbUpdate(db *bolt.DB, bucketName string, key string, value string) error {
+	fmt.Println("*************************dbUpdate*1")
 	err := db.Update(func(tx *bolt.Tx) error {
+		fmt.Println("*************************dbUpdate*2")
 		//Create a bucket
 		bu, err := tx.CreateBucketIfNotExists([]byte(bucketName))
 		if err != nil {
 			return fmt.Errorf("error: CreateBuckerIfNotExists failed: %v", err)
 		}
+		fmt.Println("*************************dbUpdate*3")
 
 		//Put a value into the bucket.
 		if err := bu.Put([]byte(key), []byte(value)); err != nil {
 			return err
 		}
+		fmt.Println("*************************dbUpdate*4")
 
 		//If all was ok, we should return a nil for a commit to happen. Any error
 		// returned will do a rollback.
@@ -55,11 +59,12 @@ func dbViewAll(db *bolt.DB, bucketName string) (map[string]string, error) {
 	//Map for returning the key values in the db.
 	m := make(map[string]string)
 
-	fmt.Println("*************************1")
+	fmt.Println("*************************dbViewAll*1")
 	err := db.View(func(tx *bolt.Tx) error {
 
-		fmt.Printf("*************************2\n")
+		fmt.Println("*************************dbViewAll*2")
 		bu := tx.Bucket([]byte(bucketName))
+		fmt.Println("*************************dbViewAll*3")
 		//Check if tx.Bucket returns nil, and return if nil,
 		// if it was nil and we did continue it will panic
 		// on the first use of the bucket, since it does not exist.
@@ -67,16 +72,19 @@ func dbViewAll(db *bolt.DB, bucketName string) (map[string]string, error) {
 			log.Println("error: bucket does not exist: ", bu)
 			return fmt.Errorf("error: bucket does not exist: value : %v", bu)
 		}
+		fmt.Println("*************************dbViewAll*4")
 
 		//create a cursor, go to the first key in the db,
 		// then iterate all key's with next.
 		cursor := bu.Cursor()
+		fmt.Println("*************************dbViewAll*5")
 		cursor.First()
+		fmt.Println("*************************dbViewAll*6")
 		for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
 			m[string(k)] = string(v)
 			//fmt.Printf("key=%s, value=%s\n", k, v)
 		}
-
+		fmt.Println("*************************dbViewAll*7")
 		return nil
 	})
 
