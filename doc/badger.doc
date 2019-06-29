@@ -1,0 +1,89 @@
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/dgraph-io/badger"
+)
+
+//dbUpdate will put key/values in a specified db, and in a specified bucket.
+func dbUpdateB(db *badger.DB, key string, value string) error {
+	var err error
+
+	txn := db.NewTransaction(true)
+	err = txn.Set([]byte(key), []byte(value))
+	if err != nil {
+		log.Println("error: txn.Set failed: ", err)
+	}
+
+	err = txn.Commit()
+	if err != nil {
+		log.Println("error: txn.Commit failed: ", err)
+	}
+
+	return err
+}
+
+//dbViewSingle will look up the value for a specified key.
+func dbViewSingleB(db *badger.DB, bucketName string, key string) (string, error) {
+	var value string
+	var err error
+
+	err = db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte("key"))
+		if err != nil {
+			return err
+		}
+		val, err := item.ValueCopy(nil)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%s\n", string(val))
+		value = string(val)
+		return nil
+	})
+
+	return value, err
+
+}
+
+//dbViewAll will get all the key/values from a specified bucket.
+func dbViewAllB(db *badger.DB, bucketName string) (map[string]string, error) {
+	//Map for returning the key values in the db.
+	//m := make(map[string]string)
+	var err error
+	txr := db.NewTransaction(false)
+	//--------
+	iterateOpts := badger.DefaultIteratorOptions
+	iterateOpts.PrefetchValues = true
+	iterator := txr.NewIterator(iterateOpts)
+	//We have to rewind the iterator.
+	iterator.Rewind()
+	if !iterator.Valid() {
+		log.Println("*** Iterator not valid, before for loop!!!")
+		return nil, nil
+	}
+
+	defer iterator.Close()
+
+	for {
+		fmt.Println("CHECKING1 !!!")
+		fmt.Printf("Found item: %v \n", iterator.Item().String())
+		var k, v []byte
+		iterator.Item().KeyCopy(k)
+		iterator.Item().ValueCopy(v)
+		fmt.Println("CHECKING2 !!!, k=", k, " and v=", v)
+
+		iterator.Next()
+		if !iterator.Valid() {
+			log.Println("*** last item for iteration done")
+			break
+		}
+
+	}
+	//--------
+
+	return nil, err
+}
+
