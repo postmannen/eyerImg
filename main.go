@@ -13,6 +13,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"time"
 
 	"github.com/boltdb/bolt"
 
@@ -152,6 +153,7 @@ func handlers(s *server, a *authsession.Auth) {
 }
 
 const dbName = "./db.bolt"
+const bucketName = "pictures"
 
 func main() {
 	var err error
@@ -198,11 +200,26 @@ func main() {
 	}
 
 	//open takes the file name, permissions for that file, and database options.
-	srv.db, err = bolt.Open(dbName, 0600, nil)
+	//srv.db, err = bolt.Open(dbName, 0600, nil)
+	//if err != nil {
+	//	//If we cannot open a db we close the program and print the error
+	//	log.Fatalln("error: bolt.Open: ", err)
+	//}
+
+	srv.db, err = bolt.Open(dbName, 0600, &bolt.Options{
+		Timeout:  1 * time.Second,
+		ReadOnly: false,
+	})
+
 	if err != nil {
-		//If we cannot open a db we close the program and print the error
-		log.Fatalln("error: bolt.Open: ", err)
+		return
 	}
+
+	err = srv.db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
+
+		return err
+	})
 
 	defer srv.db.Close()
 
