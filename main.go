@@ -13,6 +13,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"time"
 
 	"github.com/boltdb/bolt"
 
@@ -205,22 +206,26 @@ func main() {
 	//	log.Fatalln("error: bolt.Open: ", err)
 	//}
 
-	//srv.db, err = bolt.Open(dbName, 0600, &bolt.Options{
-	//	Timeout:  1 * time.Second,
-	//	ReadOnly: false,
-	//})
-	//
-	//if err != nil {
-	//	return
-	//}
-	//
-	//err = srv.db.Update(func(tx *bolt.Tx) error {
-	//	_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
-	//
-	//	return err
-	//})
-	//
-	//defer srv.db.Close()
+	srv.db, err = bolt.Open(dbName, 0600, &bolt.Options{
+		Timeout:  1 * time.Second,
+		ReadOnly: false,
+	})
+
+	if err != nil {
+		log.Printf("error: failed to open database in main : %v\n", err)
+		return
+	}
+
+	err = srv.db.Update(func(tx *bolt.Tx) error {
+		bu, err := tx.CreateBucketIfNotExists([]byte(bucketName))
+		if bu == nil {
+			log.Printf("error: bucket = nil in main, and err = %v\n", err)
+		}
+
+		return err
+	})
+
+	defer srv.db.Close()
 
 	//If no -proto flag was given it will default to serving the page
 	// over http.
