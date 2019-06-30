@@ -59,12 +59,10 @@ func dbViewAll(db *bolt.DB, bucketName string) (map[string]string, error) {
 	//Map for returning the key values in the db.
 	m := make(map[string]string)
 
-	fmt.Println("*************************dbViewAll*1")
 	err := db.View(func(tx *bolt.Tx) error {
 
-		fmt.Println("*************************dbViewAll*2")
 		bu := tx.Bucket([]byte(bucketName))
-		fmt.Println("*************************dbViewAll*3")
+
 		//Check if tx.Bucket returns nil, and return if nil,
 		// if it was nil and we did continue it will panic
 		// on the first use of the bucket, since it does not exist.
@@ -72,19 +70,15 @@ func dbViewAll(db *bolt.DB, bucketName string) (map[string]string, error) {
 			log.Println("error: bucket does not exist: ", bu)
 			return fmt.Errorf("error: bucket does not exist: value : %v", bu)
 		}
-		fmt.Println("*************************dbViewAll*4")
 
 		//create a cursor, go to the first key in the db,
 		// then iterate all key's with next.
 		cursor := bu.Cursor()
-		fmt.Println("*************************dbViewAll*5")
 		cursor.First()
-		fmt.Println("*************************dbViewAll*6")
 		for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
 			m[string(k)] = string(v)
 			//fmt.Printf("key=%s, value=%s\n", k, v)
 		}
-		fmt.Println("*************************dbViewAll*7")
 		return nil
 	})
 

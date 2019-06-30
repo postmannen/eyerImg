@@ -32,7 +32,7 @@ func (s *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 	tplData := s.prepTemplateData(r)
 
 	fmt.Println("------------------BEFORE VIEWALL")
-	picMap, err := dbViewAll(s.db, "pictures")
+	picMap, err := dbViewAll(s.db, bucketName)
 	if err != nil {
 		log.Println("error: failed failed to get key/values from db: ", err)
 	}
@@ -105,23 +105,12 @@ func (s *server) uploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("----------- preparing to update db")
-	err = dbUpdate(s.db, "pictures", fileNameThumb, fileNameMain)
+	err = dbUpdate(s.db, bucketName, fileNameThumb, fileNameMain)
 	if err != nil {
 		log.Println("error: failed to update db with new key/value: ", err)
 	}
 	fmt.Println("---------- done storing to db --------------------")
-	//picMap, err := dbViewAll(s.db, "pictures")
-	//if err != nil {
-	//	log.Println("error: failed failed to get key/values from db: ", err)
-	//}
-	//fmt.Println("---------- done viewing db --------------------")
-	//
-	//fmt.Fprintf(w, "%v\n", picMap)
-	//
-	////We store the picMap in the TemplateData struct, so we can use it's
-	//// values inside the template.
-	//tplData.PictureMap = picMap
-	//
+
 	thumbOutFile.Close()
 
 	//parse the request to check if the upload button was pressed.
