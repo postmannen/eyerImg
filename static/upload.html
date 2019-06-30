@@ -9,9 +9,9 @@
   <body>
     <form enctype="multipart/form-data" action="{{.UploadURL}}" method="post">
       <div class="columns">
+
         <div class="column">
           <div class="card">
-
             <div class="file has-name is-fullwidth">
               <label class="file-label">
                 <input class="file-input" id="file" type="file" name="myFile">
@@ -28,15 +28,14 @@
                 </span>
               </label>
             </div>
-
             <input class="button is-fullwidth is-centered" type="submit" name="fileSubmit" value="upload" />
-
           </div>
         </div>
+
         <div class="column">
           {{template "showPictures" .}}
         </div>
-        <div class="column"></div>
+
         <div class="column"></div>
       </div>
     </form>
@@ -56,7 +55,13 @@
 
 {{define "showPictures"}}
 {{range $key,$value := .PictureMap}}
-<img src="{{$key}}" alt="{{$key}}">
+<div class="box">
+  <a href="{{$key}}">
+    <figure class="image is-128x128">
+      <img src="{{$value}}" alt="{{$key}}">
+    </figure>
+  </a>
+</div>
 {{end}}
 {{end}}
 
