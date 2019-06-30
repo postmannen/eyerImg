@@ -178,34 +178,12 @@ func main() {
 	//Greate a new server type that will hold all handlers, and web variable data.
 	srv := newServer(*proto, *host, *port, store)
 
-	//Initialize the handlers for this program.
-	handlers(srv, a)
-
-	//if the -proto flag is given 'http', we start a https session
-	// with a certificate from letsencrypt.
-	if *proto == "https" {
-		// read and agree to your CA's legal documents
-		certmagic.Default.Agreed = true
-		// provide an email address
-		certmagic.Default.Email = "you@yours.com"
-		// use the staging endpoint while we're developing
-		certmagic.Default.CA = certmagic.LetsEncryptStagingCA
-
-		err := certmagic.HTTPS([]string{"eyer.io"}, nil)
-		if err != nil {
-			log.Println("--- error: cermagic.HTTPS failed: ", err)
-			return
-		}
-
-	}
-
 	//open takes the file name, permissions for that file, and database options.
 	//srv.db, err = bolt.Open(dbName, 0600, nil)
 	//if err != nil {
 	//	//If we cannot open a db we close the program and print the error
 	//	log.Fatalln("error: bolt.Open: ", err)
 	//}
-
 	srv.db, err = bolt.Open(dbName, 0600, &bolt.Options{
 		Timeout:  1 * time.Second,
 		ReadOnly: false,
@@ -227,9 +205,38 @@ func main() {
 
 	defer srv.db.Close()
 
+	log.Printf("info: database routine done ok\n")
+
+	log.Printf("info: checking existense of db file\n")
+	fileInfo, err := os.Stat(dbName)
+	if err != nil {
+		log.Printf("error: os.Stat: err : %v \n    fileInfo: %v\n", err, fileInfo)
+	}
+
+	//Initialize the handlers for this program.
+	handlers(srv, a)
+
+	//if the -proto flag is given 'http', we start a https session
+	// with a certificate from letsencrypt.
+	if *proto == "https" {
+		// read and agree to your CA's legal documents
+		certmagic.Default.Agreed = true
+		// provide an email address
+		certmagic.Default.Email = "you@yours.com"
+		// use the staging endpoint while we're developing
+		certmagic.Default.CA = certmagic.LetsEncryptStagingCA
+
+		err := certmagic.HTTPS([]string{"eyer.io"}, nil)
+		if err != nil {
+			log.Println("--- error: cermagic.HTTPS failed: ", err)
+			return
+		}
+
+	}
+
 	//If no -proto flag was given it will default to serving the page
 	// over http.
-	log.Println("Web server started, listening at port ", *host+*port)
+	log.Println("Web server started, listening at port ", *host+":"+*port)
 	err = http.ListenAndServe(*hostListen+":"+*port, nil)
 	if err != nil {
 		log.Println("error: ListenAndServer failed: ", err)
